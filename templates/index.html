@@ -108,8 +108,8 @@
   .layout {
     display: flex;
     flex: 1;
-    overflow: hidden;
     height: calc(100vh - 56px);
+    overflow: hidden;
   }
 
   /* ── SIDEBAR ── */
@@ -410,16 +410,16 @@
     position: fixed;
     bottom: 24px;
     right: 24px;
-    width: 40px;
-    height: 40px;
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
     background: var(--surface);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     color: var(--text);
-    font-size: 18px;
+    font-size: 20px;
     line-height: 1;
     cursor: pointer;
-    z-index: 98;
+    z-index: 9999;
     opacity: 0;
     transform: translateY(16px);
     transition: opacity 0.25s, transform 0.25s, border-color 0.15s, color 0.15s;
@@ -1161,13 +1161,20 @@ function showToast(msg, error = false) {
 }
 
 // ── Scroll to top ──
-const mainEl = document.querySelector('main');
 const scrollBtn = document.getElementById('scrollTopBtn');
-mainEl.addEventListener('scroll', () => {
-  scrollBtn.classList.toggle('visible', mainEl.scrollTop > 300);
-});
+const mainEl = document.querySelector('main');
+
+function checkScroll() {
+  const scrolled = mainEl.scrollTop > 100 || window.scrollY > 100;
+  scrollBtn.classList.toggle('visible', scrolled);
+}
+
+mainEl.addEventListener('scroll', checkScroll);
+window.addEventListener('scroll', checkScroll);
+
 function scrollToTop() {
   mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Theme toggle ──
