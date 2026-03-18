@@ -1,0 +1,3 @@
+# --- Python ---
+# Exclut tous les dossiers __pycache__ du projet
+**/__pycache__/
