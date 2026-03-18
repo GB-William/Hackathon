@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhotoDesk — Agence de Presse</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --border: #2a2a32;
+    --accent: #e8ff47;
+    --accent2: #ff6b35;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --danger: #ff4757;
+    --success: #2ed573;
+    --sidebar-w: 240px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── TOP BAR ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    flex-shrink: 0;
+  }
+  .logo {
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.5px;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  .header-stats {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  .header-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-accent {
+    background: var(--accent);
+    color: #000;
+    border-color: var(--accent);
+  }
+  .btn-accent:hover { background: #cfe637; color: #000; border-color: #cfe637; }
+  .btn-danger { border-color: var(--danger); color: var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+
+  /* ── LAYOUT ── */
+  .layout {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    height: calc(100vh - 56px);
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-section {
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .dir-tree { list-style: none; }
+  .dir-tree li { margin: 2px 0; }
+  .dir-tree a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    color: var(--text);
+    text-decoration: none;
+    font-size: 13px;
+    transition: background 0.1s;
+  }
+  .dir-tree a:hover { background: rgba(255,255,255,0.05); }
+  .dir-tree a.active { background: rgba(232,255,71,0.12); color: var(--accent); }
+  .dir-tree .sub { padding-left: 20px; }
+  .dir-tree .sub a { font-size: 12px; color: var(--muted); }
+  .dir-tree .sub a:hover, .dir-tree .sub a.active { color: var(--accent); }
+
+  .icon { font-size: 13px; }
+
+  /* Tag filter sidebar */
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tag-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.1s;
+    text-decoration: none;
+    display: inline-block;
+  }
+  .tag-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .tag-chip.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 500; }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    flex-wrap: wrap;
+  }
+
+  .breadcrumb {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    flex: 1;
+  }
+  .breadcrumb span { color: var(--text); }
+
+  .selection-info {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  /* ── GRID ── */
+  .grid-container { padding: 20px; flex: 1; }
+  .photo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 170px);
+    gap: 12px;
+  }
+
+  .photo-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    position: relative;
+    width: 170px;
+    height: 185px;
+    flex-shrink: 0;
+  }
+  .photo-card:hover { border-color: var(--muted); transform: translateY(-1px); }
+  .photo-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(232,255,71,0.25);
+  }
+
+  .photo-card .checkbox {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 18px;
+    height: 18px;
+    background: rgba(0,0,0,0.7);
+    border: 1.5px solid var(--muted);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    z-index: 2;
+    transition: all 0.1s;
+  }
+  .photo-card.selected .checkbox {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .vignette-wrap {
+    width: 170px;
+    height: 128px;
+    overflow: hidden;
+    background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .vignette-wrap img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    pointer-events: none;
+  }
+
+  .photo-card .meta {
+    padding: 8px;
+    border-top: 1px solid var(--border);
+  }
+  .photo-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 4px;
+  }
+  .photo-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+  .photo-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    padding: 1px 5px;
+    background: rgba(232,255,71,0.1);
+    color: var(--accent);
+    border-radius: 2px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: var(--muted);
+  }
+  .empty-state h2 { font-size: 24px; margin-bottom: 8px; }
+
+  /* ── MODALS ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    min-width: 340px;
+    max-width: 480px;
+    width: 90%;
+  }
+  .modal h2 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+
+  .modal-field { margin-bottom: 14px; }
+  .modal-field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .modal-field input, .modal-field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+  }
+  .modal-field input:focus, .modal-field select:focus {
+    border-color: var(--accent);
+  }
+
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px; }
+
+  /* Lightbox */
+  #lightbox {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #lightbox.open { display: flex; }
+  #lightbox img {
+    max-width: 90vw;
+    max-height: 85vh;
+    object-fit: contain;
+    border-radius: 4px;
+  }
+  #lightbox .lb-controls {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+  }
+  #lightbox .lb-name {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+  }
+  #lightbox .lb-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--success);
+    color: #000;
+    font-weight: 600;
+    font-size: 13px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    z-index: 999;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.error { background: var(--danger); color: #fff; }
+
+  /* Tag input suggestions */
+  .tag-input-wrap { position: relative; }
+  .tag-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-radius: 0 0 5px 5px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 10;
+    display: none;
+  }
+  .tag-suggestion-item {
+    padding: 6px 12px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    cursor: pointer;
+    color: var(--text);
+  }
+  .tag-suggestion-item:hover { background: rgba(255,255,255,0.06); color: var(--accent); }
+
+  /* New dir form inline */
+  .inline-form { display: flex; gap: 6px; }
+  .inline-form input {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 8px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    outline: none;
+  }
+  .inline-form input:focus { border-color: var(--accent); }
+
+  scrollbar-width: thin;
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">Photo<span>Desk</span></div>
+  <div class="header-stats">{{ total_images }} images indexées</div>
+  <div class="header-right">
+    <button class="btn" onclick="openMkdir()">📁 Nouveau dossier</button>
+    <button class="btn btn-accent" onclick="reindex()">↻ Ré-indexer</button>
+  </div>
+</header>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside>
+    <!-- Arborescence -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Répertoires</div>
+      <ul class="dir-tree">
+        <li>
+          <a href="/" class="{{ 'active' if not current_dir else '' }}">
+            <span class="icon">🗂</span> Images/
+          </a>
+        </li>
+        {% for d in dirs %}
+        <li>
+          <a href="/?dir={{ d.path }}" class="{{ 'active' if current_dir == d.path else '' }}">
+            <span class="icon">📁</span> {{ d.name }}
+          </a>
+          {% if d.children %}
+          <ul class="dir-tree sub">
+            {% for c in d.children %}
+            <li>
+              <a href="/?dir={{ c.path }}" class="{{ 'active' if current_dir == c.path else '' }}">
+                ↳ {{ c.name }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+          {% endif %}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Filtre tags -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Filtrer par tag</div>
+      <div class="tag-chips">
+        <a href="/?dir={{ current_dir }}&no_tag=1" class="tag-chip {{ 'active' if no_tag else '' }}">sans tag</a>
+        {% for t in all_tags %}
+        <a href="/?dir={{ current_dir }}&tag={{ t }}" class="tag-chip {{ 'active' if tag_filter == t else '' }}">{{ t }}</a>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Nouveau dossier inline -->
+    <div class="sidebar-section">
+      <div class="sidebar-label">Nouveau sous-dossier ici</div>
+      <div class="inline-form">
+        <input type="text" id="newDirName" placeholder="nom_dossier" />
+        <button class="btn btn-sm" onclick="mkdirInline()">+</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="breadcrumb">
+        📍 Images/{% if current_dir %}<span>{{ current_dir }}</span>{% endif %}
+        {% if tag_filter %} · tag: <span style="color:var(--accent)">{{ tag_filter }}</span>{% endif %}
+        {% if no_tag %} · <span style="color:var(--accent2)">sans tag</span>{% endif %}
+      </div>
+
+      <div class="selection-info" id="selectionInfo" style="display:none">
+        <span id="selCount">0</span> sélectionnée(s)
+      </div>
+
+      <button class="btn btn-sm" onclick="selectAll()">Tout sélectionner</button>
+      <button class="btn btn-sm" onclick="clearSelection()">Désélectionner</button>
+      <button class="btn btn-sm" onclick="openTagModal()" id="btnTag" disabled>🏷 Tagger</button>
+      <button class="btn btn-sm" onclick="openMoveModal()" id="btnMove" disabled>↪ Déplacer</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid-container">
+      {% if images %}
+      <div class="photo-grid" id="photoGrid">
+        {% for img in images %}
+        <div class="photo-card" data-name="{{ img.name }}" data-rel="{{ img.rel }}" onclick="toggleSelect(this, event)">
+          <div class="checkbox">✓</div>
+          <div class="vignette-wrap" ondblclick="openMiniature('{{ img.rel }}', '{{ img.name }}', event)">
+            <img src="/vignette/{{ img.rel }}" alt="{{ img.name }}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'160\' height=\'120\'><rect fill=\'%23222\' width=\'160\' height=\'120\'/><text x=\'50%25\' y=\'50%25\' fill=\'%23555\' text-anchor=\'middle\' dy=\'.3em\' font-size=\'12\'>?</text></svg>'">
+          </div>
+          <div class="meta">
+            <div class="photo-name" title="{{ img.name }}">{{ img.name }}</div>
+            <div class="photo-tags">
+              {% for t in img.tags %}
+              <span class="photo-tag">{{ t }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state">
+        <h2>Aucune image</h2>
+        <p>Ce répertoire est vide ou aucune image ne correspond aux filtres.</p>
+      </div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+
+<!-- LIGHTBOX (miniature → original) -->
+<div id="lightbox">
+  <button class="btn lb-close" onclick="closeLightbox()">✕ Fermer</button>
+  <img id="lbImg" src="" alt="">
+  <div class="lb-name" id="lbName"></div>
+  <div class="lb-controls">
+    <button class="btn" id="lbToggleBtn" onclick="toggleLbSize()">Voir l'originale UHD</button>
+  </div>
+</div>
+
+<!-- MODAL TAGS -->
+<div class="modal-overlay" id="tagModal">
+  <div class="modal">
+    <h2>🏷 Ajouter / définir des tags</h2>
+    <div class="modal-field">
+      <label>Action</label>
+      <select id="tagAction">
+        <option value="add">Ajouter ces tags</option>
+        <option value="set">Remplacer tous les tags</option>
+        <option value="remove">Retirer ces tags</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Tags (séparés par des virgules)</label>
+      <div class="tag-input-wrap">
+        <input type="text" id="tagInput" placeholder="monument, paysage, portrait..." autocomplete="off" oninput="showSuggestions()" onkeydown="tagKeyDown(event)">
+        <div class="tag-suggestions" id="tagSuggestions"></div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('tagModal')">Annuler</button>
+      <button class="btn btn-accent" onclick="applyTags()">Appliquer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MOVE -->
+<div class="modal-overlay" id="moveModal">
+  <div class="modal">
+    <h2>↪ Déplacer les images</h2>
+    <div class="modal-field">
+      <label>Destination</label>
+      <select id="moveTarget">
+        <option value="">Images/ (racine)</option>
+        {% for d in dirs %}
+        <option value="{{ d.path }}">📁 {{ d.path }}</option>
+        {% for c in d.children %}
+        <option value="{{ c.path }}">  ↳ {{ c.path }}</option>
+        {% endfor %}
+        {% endfor %}
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('moveModal')">Annuler</button>
+      <button class="btn btn-accent" onclick="applyMove()">Déplacer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MKDIR -->
+<div class="modal-overlay" id="mkdirModal">
+  <div class="modal">
+    <h2>📁 Nouveau répertoire</h2>
+    <div class="modal-field">
+      <label>Répertoire parent</label>
+      <select id="mkdirParent">
+        <option value="">Images/ (racine)</option>
+        {% for d in dirs %}
+        <option value="{{ d.path }}">📁 {{ d.path }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>Nom du nouveau dossier</label>
+      <input type="text" id="mkdirName" placeholder="2026_03_Paris">
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('mkdirModal')">Annuler</button>
+      <button class="btn btn-accent" onclick="applyMkdir()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+const CURRENT_DIR = "{{ current_dir }}";
+const ALL_TAGS = {{ all_tags | tojson }};
+
+// ── Selection ──
+let selected = new Set();
+
+function toggleSelect(card, e) {
+  if (e.target.tagName === 'IMG' && e.type === 'dblclick') return;
+  const name = card.dataset.name;
+  if (selected.has(name)) {
+    selected.delete(name);
+    card.classList.remove('selected');
+  } else {
+    selected.add(name);
+    card.classList.add('selected');
+  }
+  updateSelectionUI();
+}
+
+function selectAll() {
+  document.querySelectorAll('.photo-card').forEach(c => {
+    selected.add(c.dataset.name);
+    c.classList.add('selected');
+  });
+  updateSelectionUI();
+}
+
+function clearSelection() {
+  selected.clear();
+  document.querySelectorAll('.photo-card').forEach(c => c.classList.remove('selected'));
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const n = selected.size;
+  const info = document.getElementById('selectionInfo');
+  const btnTag = document.getElementById('btnTag');
+  const btnMove = document.getElementById('btnMove');
+  if (n > 0) {
+    info.style.display = 'block';
+    document.getElementById('selCount').textContent = n;
+    btnTag.disabled = false;
+    btnMove.disabled = false;
+  } else {
+    info.style.display = 'none';
+    btnTag.disabled = true;
+    btnMove.disabled = true;
+  }
+}
+
+// ── Lightbox ──
+let lbMode = 'mini'; // mini | original
+let lbCurrentRel = '';
+
+function openMiniature(rel, name, e) {
+  e && e.stopPropagation();
+  lbCurrentRel = rel;
+  lbMode = 'mini';
+  const lb = document.getElementById('lightbox');
+  document.getElementById('lbImg').src = '/miniature/' + rel;
+  document.getElementById('lbName').textContent = name + ' (miniature)';
+  document.getElementById('lbToggleBtn').textContent = 'Voir l\'originale UHD';
+  lb.classList.add('open');
+}
+
+function toggleLbSize() {
+  const img = document.getElementById('lbImg');
+  const name = document.getElementById('lbName');
+  const btn = document.getElementById('lbToggleBtn');
+  if (lbMode === 'mini') {
+    img.src = '/original/' + lbCurrentRel;
+    name.textContent = lbCurrentRel + ' (UHD originale)';
+    btn.textContent = 'Voir la miniature';
+    lbMode = 'original';
+  } else {
+    img.src = '/miniature/' + lbCurrentRel;
+    name.textContent = lbCurrentRel + ' (miniature)';
+    btn.textContent = 'Voir l\'originale UHD';
+    lbMode = 'mini';
+  }
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+document.getElementById('lightbox').addEventListener('click', function(e) {
+  if (e.target === this) closeLightbox();
+});
+
+// ── Modals ──
+function openTagModal() { document.getElementById('tagModal').classList.add('open'); }
+function openMoveModal() { document.getElementById('moveModal').classList.add('open'); }
+function openMkdir() { document.getElementById('mkdirModal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Tag autocomplete ──
+function showSuggestions() {
+  const val = document.getElementById('tagInput').value;
+  const parts = val.split(',');
+  const current = parts[parts.length - 1].trim().toLowerCase();
+  const box = document.getElementById('tagSuggestions');
+  if (!current) { box.style.display = 'none'; return; }
+  const matches = ALL_TAGS.filter(t => t.toLowerCase().startsWith(current) && t.toLowerCase() !== current);
+  if (!matches.length) { box.style.display = 'none'; return; }
+  box.innerHTML = matches.map(m => `<div class="tag-suggestion-item" onclick="selectSuggestion('${m}')">${m}</div>`).join('');
+  box.style.display = 'block';
+}
+
+function selectSuggestion(tag) {
+  const inp = document.getElementById('tagInput');
+  const parts = inp.value.split(',');
+  parts[parts.length - 1] = tag;
+  inp.value = parts.join(', ') + ', ';
+  document.getElementById('tagSuggestions').style.display = 'none';
+  inp.focus();
+}
+
+function tagKeyDown(e) {
+  if (e.key === 'Escape') document.getElementById('tagSuggestions').style.display = 'none';
+}
+
+// ── Apply Tags ──
+async function applyTags() {
+  const tagStr = document.getElementById('tagInput').value;
+  const tags = tagStr.split(',').map(t => t.trim()).filter(Boolean);
+  const action = document.getElementById('tagAction').value;
+  const files = [...selected];
+
+  const res = await fetch('/api/tags', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ files, tags, dir: CURRENT_DIR, action })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`Tags appliqués à ${files.length} image(s)`);
+    closeModal('tagModal');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('Erreur lors du tagging', true);
+  }
+}
+
+// ── Apply Move ──
+async function applyMove() {
+  const dst = document.getElementById('moveTarget').value;
+  const files = [...selected];
+
+  const res = await fetch('/api/move', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ files, src_dir: CURRENT_DIR, dst_dir: dst })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`${data.moved.length} image(s) déplacée(s)`);
+    closeModal('moveModal');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('Erreur: ' + (data.error || ''), true);
+  }
+}
+
+// ── Apply Mkdir ──
+async function applyMkdir() {
+  const parent = document.getElementById('mkdirParent').value;
+  const name = document.getElementById('mkdirName').value.trim();
+  if (!name) return;
+
+  const res = await fetch('/api/mkdir', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ parent, name })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Dossier créé : ' + name);
+    closeModal('mkdirModal');
+    setTimeout(() => location.reload(), 500);
+  } else {
+    showToast('Erreur: ' + (data.error || ''), true);
+  }
+}
+
+// ── Mkdir inline sidebar ──
+async function mkdirInline() {
+  const name = document.getElementById('newDirName').value.trim();
+  if (!name) return;
+  const res = await fetch('/api/mkdir', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ parent: CURRENT_DIR, name })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast('Dossier créé');
+    setTimeout(() => location.reload(), 500);
+  }
+}
+
+// ── Reindex ──
+async function reindex() {
+  showToast('Indexation en cours…');
+  const res = await fetch('/api/index', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ force: false })
+  });
+  const data = await res.json();
+  showToast(`Indexation OK — ${data.count} images`);
+  setTimeout(() => location.reload(), 1000);
+}
+
+// ── Toast ──
+function showToast(msg, error = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = error ? 'error' : '';
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Close modals on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// Vignette double-click opens miniature
+document.querySelectorAll('.vignette-wrap').forEach(w => {
+  w.addEventListener('dblclick', function(e) {
+    e.stopPropagation();
+    const card = this.closest('.photo-card');
+    openMiniature(card.dataset.rel, card.dataset.name, e);
+  });
+});
+</script>
+</body>
+</html>
