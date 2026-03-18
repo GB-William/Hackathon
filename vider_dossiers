@@ -1,0 +1,25 @@
+import os
+import shutil
+
+def vider_dossiers(base_path, dossiers_a_vider):
+    for dossier in dossiers_a_vider:
+        chemin = os.path.join(base_path, dossier)
+
+        if not os.path.exists(chemin):
+            print(f"{dossier} n'existe pas, ignoré.")
+            continue
+
+        for element in os.listdir(chemin):
+            chemin_complet = os.path.join(chemin, element)
+
+            try:
+                if os.path.isfile(chemin_complet) or os.path.islink(chemin_complet):
+                    os.remove(chemin_complet)
+                elif os.path.isdir(chemin_complet):
+                    shutil.rmtree(chemin_complet)
+            except Exception as e:
+                print(f"Erreur avec {chemin_complet}: {e}")
+
+base_path = "."  # racine de ton projet
+dossiers = ["Images", "Miniatures", "Vignettes"]
+vider_dossiers(base_path, dossiers)
