@@ -25,8 +25,25 @@ def get_relative_path(path: Path, base: Path) -> str:
     return str(path.relative_to(base))
 
 
+def fix_exif_orientation(img: Image.Image) -> Image.Image:
+    """Corrige l'orientation d'une image selon ses métadonnées EXIF."""
+    try:
+        exif = img.getexif()
+        orientation = exif.get(274)  # 274 = tag Orientation
+        rotations = {
+            3: Image.ROTATE_180,
+            6: Image.ROTATE_270,
+            8: Image.ROTATE_90,
+        }
+        if orientation in rotations:
+            img = img.transpose(rotations[orientation])
+    except Exception:
+        pass
+    return img
+
+
 def make_thumbnail(src: Path, dst: Path, max_size: tuple):
-    """Crée une miniature en respectant le ratio d'origine."""
+    """Crée une miniature en respectant le ratio d'origine et l'orientation EXIF."""
     dst.parent.mkdir(parents=True, exist_ok=True)
     if dst.exists():
         src_mtime = src.stat().st_mtime
@@ -34,6 +51,7 @@ def make_thumbnail(src: Path, dst: Path, max_size: tuple):
         if dst_mtime >= src_mtime:
             return False  # Déjà à jour
     with Image.open(src) as img:
+        img = fix_exif_orientation(img)
         img = img.convert("RGB")
         img.thumbnail(max_size, Image.LANCZOS)
         img.save(dst, quality=85, optimize=True)
