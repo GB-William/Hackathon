@@ -228,6 +228,43 @@ def api_mkdir():
     return jsonify({"success": True})
 
 
+@app.route("/api/delete", methods=["POST"])
+def api_delete():
+    data = request.json
+    filenames = data.get("files", [])
+    rel_dir = data.get("dir", "")
+
+    deleted = 0
+    errors = []
+
+    for fname in filenames:
+        for base in [IMAGES_DIR, MINIATURES_DIR, VIGNETTES_DIR]:
+            path = (base / rel_dir / fname) if rel_dir else (base / fname)
+            if path.exists():
+                try:
+                    path.unlink()
+                    if base == IMAGES_DIR:
+                        deleted += 1
+                except Exception as e:
+                    errors.append(str(e))
+
+        # Supprimer du .tags.json
+        img_dir = IMAGES_DIR / rel_dir if rel_dir else IMAGES_DIR
+        tags_data = load_tags(img_dir)
+        if fname in tags_data:
+            del tags_data[fname]
+            save_tags(img_dir, tags_data)
+
+    # Mettre à jour le cache
+    cache = load_cache()
+    for fname in filenames:
+        rel = f"{rel_dir}/{fname}" if rel_dir else fname
+        cache["images"].pop(rel, None)
+    save_cache(cache)
+
+    return jsonify({"success": True, "deleted": deleted, "errors": errors})
+
+
 @app.route("/api/upload", methods=["POST"])
 def api_upload():
     rel_dir = request.form.get("dir", "")

@@ -769,6 +769,7 @@
       <button class="btn btn-sm" onclick="clearSelection()">Désélectionner</button>
       <button class="btn btn-sm" onclick="openTagModal()" id="btnTag" disabled>🏷 Tagger</button>
       <button class="btn btn-sm" onclick="openMoveModal()" id="btnMove" disabled>↪ Déplacer</button>
+      <button class="btn btn-sm btn-danger" onclick="confirmDelete()" id="btnDelete" disabled>🗑 Supprimer</button>
     </div>
 
     <!-- Grid -->
@@ -933,6 +934,23 @@
 <!-- SCROLL TO TOP -->
 <button id="scrollTopBtn" onclick="scrollToTop()" title="Remonter en haut">↑</button>
 
+<!-- MODAL CONFIRM DELETE -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:400px">
+    <h2 style="color:var(--danger)">🗑 Confirmer la suppression</h2>
+    <p style="color:var(--muted);font-size:13px;margin-bottom:8px">
+      Tu es sur le point de supprimer <strong id="deleteCount" style="color:var(--text)">0</strong> image(s).
+    </p>
+    <p style="color:var(--danger);font-size:12px;font-family:'DM Mono',monospace;">
+      ⚠ Cette action supprime définitivement les fichiers (originaux, miniatures et vignettes).
+    </p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('deleteModal')">Annuler</button>
+      <button class="btn btn-danger" onclick="applyDelete()">Supprimer définitivement</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -975,15 +993,18 @@ function updateSelectionUI() {
   const info = document.getElementById('selectionInfo');
   const btnTag = document.getElementById('btnTag');
   const btnMove = document.getElementById('btnMove');
+  const btnDelete = document.getElementById('btnDelete');
   if (n > 0) {
     info.style.display = 'block';
     document.getElementById('selCount').textContent = n;
     btnTag.disabled = false;
     btnMove.disabled = false;
+    btnDelete.disabled = false;
   } else {
     info.style.display = 'none';
     btnTag.disabled = true;
     btnMove.disabled = true;
+    btnDelete.disabled = true;
   }
 }
 
@@ -1217,6 +1238,29 @@ document.querySelectorAll('.dir-tree a, .tag-chip').forEach(a => {
   });
 });
 
+
+// ── Delete ──
+function confirmDelete() {
+  document.getElementById('deleteCount').textContent = selected.size;
+  document.getElementById('deleteModal').classList.add('open');
+}
+
+async function applyDelete() {
+  const files = [...selected];
+  const res = await fetch('/api/delete', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ files, dir: CURRENT_DIR })
+  });
+  const data = await res.json();
+  if (data.success) {
+    showToast(`${data.deleted} image(s) supprimée(s)`);
+    closeModal('deleteModal');
+    setTimeout(() => location.reload(), 800);
+  } else {
+    showToast('Erreur: ' + (data.error || ''), true);
+  }
+}
 
 let uploadFiles = [];
 
