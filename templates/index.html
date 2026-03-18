@@ -63,6 +63,12 @@
     letter-spacing: -0.5px;
     color: var(--accent);
     white-space: nowrap;
+    text-decoration: none;
+  }
+
+  .logo:hover { 
+    opacity: 0.8; 
+  
   }
   .logo span { color: var(--muted); font-weight: 400; }
 
@@ -682,7 +688,7 @@
   <button class="burger-btn" id="burgerBtn" onclick="toggleSidebar()" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
-  <div class="logo">Photo<span>Desk</span></div>
+  <a href="/" class="logo">Photo<span>Desk</span></a>
   <div class="header-stats">{{ total_images }} images indexées</div>
   <div class="header-right">
     <button class="btn btn-theme" id="themeBtn" onclick="toggleTheme()" title="Mode clair / sombre">🌙</button>
