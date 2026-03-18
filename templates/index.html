@@ -20,6 +20,18 @@
     --sidebar-w: 240px;
   }
 
+  body.light {
+    --bg: #f4f4f6;
+    --surface: #ffffff;
+    --border: #dcdce8;
+    --accent: #5a6e00;
+    --accent2: #d04a10;
+    --text: #1a1a2e;
+    --muted: #8888a0;
+    --danger: #cc2233;
+    --success: #1a8a3a;
+  }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
@@ -642,6 +654,7 @@
   <div class="logo">Photo<span>Desk</span></div>
   <div class="header-stats">{{ total_images }} images indexées</div>
   <div class="header-right">
+    <button class="btn btn-theme" id="themeBtn" onclick="toggleTheme()" title="Mode clair / sombre">🌙</button>
     <button class="btn" onclick="openMkdir()">📁 Nouveau dossier</button>
     <button class="btn" onclick="openUpload()">⬆ Importer des images</button>
     <button class="btn btn-accent" onclick="reindex()">↻ Ré-indexer</button>
@@ -1115,6 +1128,18 @@ function showToast(msg, error = false) {
   t.className = error ? 'error' : '';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Theme toggle ──
+function toggleTheme() {
+  const isLight = document.body.classList.toggle('light');
+  document.getElementById('themeBtn').textContent = isLight ? '🌙' : '☀️';
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+}
+// Appliquer le thème sauvegardé
+if (localStorage.getItem('theme') === 'light') {
+  document.body.classList.add('light');
+  document.getElementById('themeBtn').textContent = '🌙';
 }
 
 // ── Burger / Sidebar mobile ──
