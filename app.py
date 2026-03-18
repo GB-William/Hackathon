@@ -15,6 +15,7 @@ from indexer import (
 )
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500 MB max par requête
 BASE_DIR = Path(__file__).parent
 
 
@@ -225,6 +226,46 @@ def api_mkdir():
         new_dir.mkdir(parents=True, exist_ok=True)
 
     return jsonify({"success": True})
+
+
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    rel_dir = request.form.get("dir", "")
+    files = request.files.getlist("files")
+
+    if not files:
+        return jsonify({"success": False, "error": "Aucun fichier reçu"})
+
+    dest_dir = IMAGES_DIR / rel_dir if rel_dir else IMAGES_DIR
+    dest_dir.mkdir(parents=True, exist_ok=True)
+
+    saved = []
+    errors = []
+    for f in files:
+        if not f.filename:
+            continue
+        ext = Path(f.filename).suffix.lower()
+        if ext not in SUPPORTED:
+            errors.append(f"{f.filename} : format non supporté")
+            continue
+        dest = dest_dir / f.filename
+        # Éviter d'écraser : ajouter un suffixe si le fichier existe déjà
+        if dest.exists():
+            stem = Path(f.filename).stem
+            counter = 1
+            while dest.exists():
+                dest = dest_dir / f"{stem}_{counter}{ext}"
+                counter += 1
+        try:
+            f.save(dest)
+            saved.append(dest.name)
+        except Exception as e:
+            errors.append(f"{f.filename} : {e}")
+
+    if saved:
+        index_all()
+
+    return jsonify({"success": True, "saved": saved, "errors": errors})
 
 
 @app.route("/api/all_tags")

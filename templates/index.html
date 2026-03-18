@@ -432,6 +432,70 @@
   }
   .inline-form input:focus { border-color: var(--accent); }
 
+  /* ── UPLOAD DROP ZONE ── */
+  .drop-zone {
+    border: 2px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: transparent;
+    margin-bottom: 16px;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: rgba(232,255,71,0.04);
+    color: var(--accent);
+  }
+  .drop-zone .drop-icon { font-size: 32px; margin-bottom: 8px; }
+  .drop-zone strong { display: block; font-size: 14px; margin-bottom: 4px; color: var(--text); }
+
+  .upload-file-list {
+    max-height: 160px;
+    overflow-y: auto;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .upload-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 4px 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    border-bottom: 1px solid var(--border);
+  }
+  .upload-file-item .fname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upload-file-item .fsize { color: var(--muted); margin-left: 8px; white-space: nowrap; }
+
+  .upload-progress {
+    display: none;
+    margin-bottom: 12px;
+  }
+  .progress-bar-wrap {
+    background: var(--border);
+    border-radius: 4px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+    border-radius: 4px;
+  }
+  .progress-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
   scrollbar-width: thin;
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -446,6 +510,7 @@
   <div class="header-stats">{{ total_images }} images indexées</div>
   <div class="header-right">
     <button class="btn" onclick="openMkdir()">📁 Nouveau dossier</button>
+    <button class="btn" onclick="openUpload()">⬆ Importer des images</button>
     <button class="btn btn-accent" onclick="reindex()">↻ Ré-indexer</button>
   </div>
 </header>
@@ -636,6 +701,51 @@
     <div class="modal-actions">
       <button class="btn" onclick="closeModal('mkdirModal')">Annuler</button>
       <button class="btn btn-accent" onclick="applyMkdir()">Créer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UPLOAD -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal" style="max-width:520px">
+    <h2>⬆ Importer des images</h2>
+
+    <div class="modal-field">
+      <label>Destination dans Images/</label>
+      <select id="uploadTarget">
+        <option value="">Images/ (racine)</option>
+        {% for d in dirs %}
+        <option value="{{ d.path }}">📁 {{ d.path }}</option>
+        {% for c in d.children %}
+        <option value="{{ c.path }}">  ↳ {{ c.path }}</option>
+        {% endfor %}
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <div class="drop-icon">📂</div>
+      <strong>Glisser-déposer les images ici</strong>
+      ou cliquer pour sélectionner des fichiers
+      <br><small style="margin-top:6px;display:block">JPG, PNG, WEBP, TIFF… — taille illimitée</small>
+    </div>
+    <input type="file" id="fileInput" multiple accept="image/*" style="display:none" onchange="onFilePick(this.files)">
+
+    <!-- Liste des fichiers -->
+    <div class="upload-file-list" id="uploadFileList"></div>
+
+    <!-- Barre de progression -->
+    <div class="upload-progress" id="uploadProgress">
+      <div class="progress-label" id="progressLabel">Envoi en cours…</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('uploadModal'); resetUpload()">Annuler</button>
+      <button class="btn btn-accent" id="btnUpload" onclick="applyUpload()" disabled>Envoyer</button>
     </div>
   </div>
 </div>
@@ -867,7 +977,113 @@ function showToast(msg, error = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// Close modals on overlay click
+// ── Upload ──
+let uploadFiles = [];
+
+function openUpload() {
+  // Pré-sélectionner le dossier courant
+  const sel = document.getElementById('uploadTarget');
+  for (let opt of sel.options) {
+    if (opt.value === CURRENT_DIR) { opt.selected = true; break; }
+  }
+  document.getElementById('uploadModal').classList.add('open');
+}
+
+function resetUpload() {
+  uploadFiles = [];
+  document.getElementById('uploadFileList').style.display = 'none';
+  document.getElementById('uploadFileList').innerHTML = '';
+  document.getElementById('uploadProgress').style.display = 'none';
+  document.getElementById('progressBar').style.width = '0%';
+  document.getElementById('fileInput').value = '';
+  document.getElementById('btnUpload').disabled = true;
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' o';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' Ko';
+  return (bytes / 1024 / 1024).toFixed(1) + ' Mo';
+}
+
+function onFilePick(files) {
+  uploadFiles = Array.from(files);
+  const list = document.getElementById('uploadFileList');
+  list.innerHTML = uploadFiles.map(f =>
+    `<div class="upload-file-item">
+      <span class="fname">📷 ${f.name}</span>
+      <span class="fsize">${formatSize(f.size)}</span>
+    </div>`
+  ).join('');
+  list.style.display = uploadFiles.length ? 'block' : 'none';
+  document.getElementById('btnUpload').disabled = uploadFiles.length === 0;
+}
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  document.getElementById('fileInput').files = files; // pour reset propre
+  onFilePick(files);
+});
+
+async function applyUpload() {
+  if (!uploadFiles.length) return;
+  const dir = document.getElementById('uploadTarget').value;
+  const btn = document.getElementById('btnUpload');
+  const progress = document.getElementById('uploadProgress');
+  const bar = document.getElementById('progressBar');
+  const label = document.getElementById('progressLabel');
+
+  btn.disabled = true;
+  progress.style.display = 'block';
+
+  // Envoyer par lots de 10 pour ne pas saturer
+  const BATCH = 10;
+  let done = 0;
+  let allSaved = [];
+  let allErrors = [];
+
+  for (let i = 0; i < uploadFiles.length; i += BATCH) {
+    const batch = uploadFiles.slice(i, i + BATCH);
+    const fd = new FormData();
+    fd.append('dir', dir);
+    batch.forEach(f => fd.append('files', f));
+
+    label.textContent = `Envoi ${Math.min(i + BATCH, uploadFiles.length)} / ${uploadFiles.length}…`;
+    bar.style.width = (done / uploadFiles.length * 100) + '%';
+
+    try {
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.saved) allSaved.push(...data.saved);
+      if (data.errors) allErrors.push(...data.errors);
+    } catch(e) {
+      allErrors.push('Erreur réseau : ' + e);
+    }
+    done += batch.length;
+    bar.style.width = (done / uploadFiles.length * 100) + '%';
+  }
+
+  label.textContent = `✓ ${allSaved.length} fichier(s) importé(s)`;
+
+  if (allErrors.length) {
+    showToast(`${allSaved.length} importé(s), ${allErrors.length} erreur(s)`, true);
+  } else {
+    showToast(`${allSaved.length} image(s) importée(s) dans Images/${dir}`);
+  }
+
+  setTimeout(() => {
+    closeModal('uploadModal');
+    resetUpload();
+    location.reload();
+  }, 1200);
+}
+
+
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', function(e) {
     if (e.target === this) this.classList.remove('open');
