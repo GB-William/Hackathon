@@ -496,6 +496,136 @@
     color: var(--muted);
   }
 
+  /* Mobile actions : cachées sur desktop */
+  .mobile-actions { display: none; }
+
+  /* ── BURGER BUTTON (hidden on desktop) ── */
+  .burger-btn {
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    cursor: pointer;
+    padding: 6px;
+    flex-shrink: 0;
+  }
+  .burger-btn span {
+    display: block;
+    height: 2px;
+    background: var(--text);
+    border-radius: 2px;
+    transition: all 0.25s;
+  }
+  .burger-btn.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .burger-btn.open span:nth-child(2) { opacity: 0; }
+  .burger-btn.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* Overlay sombre derrière la sidebar mobile */
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 49;
+    backdrop-filter: blur(2px);
+  }
+  .sidebar-overlay.open { display: block; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+
+    /* Header : burger visible, boutons cachés sauf ré-indexer */
+    .burger-btn { display: flex; }
+    .header-stats { display: none; }
+    .header-right .btn:not(.btn-accent) { display: none; }
+    .header-right { gap: 6px; }
+    .mobile-actions { display: flex; }
+
+    /* Layout empilé */
+    .layout { height: calc(100vh - 56px); position: relative; }
+
+    /* Sidebar devient un drawer latéral */
+    aside {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      bottom: 0;
+      width: 280px;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+      box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+    }
+    aside.open { transform: translateX(0); }
+
+    /* Main prend toute la largeur */
+    main { width: 100%; }
+
+    /* Toolbar scrollable horizontalement */
+    .toolbar {
+      padding: 8px 12px;
+      gap: 6px;
+      overflow-x: auto;
+      flex-wrap: nowrap;
+      -webkit-overflow-scrolling: touch;
+    }
+    .toolbar::-webkit-scrollbar { display: none; }
+    .breadcrumb { min-width: 120px; font-size: 11px; }
+    .btn-sm { padding: 6px 10px; font-size: 11px; white-space: nowrap; }
+
+    /* Grid : 2 colonnes fixes sur mobile */
+    .grid-container { padding: 12px; }
+    .photo-grid {
+      grid-template-columns: repeat(auto-fill, 140px);
+      gap: 8px;
+      justify-content: center;
+    }
+    .photo-card { width: 140px; height: 155px; }
+    .vignette-wrap { width: 140px; height: 105px; }
+
+    /* Modal plein écran sur mobile */
+    .modal {
+      width: 95%;
+      min-width: unset;
+      padding: 18px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    /* Toast en bas centré */
+    #toast { left: 16px; right: 16px; bottom: 16px; text-align: center; }
+
+    /* Lightbox : image plein écran */
+    #lightbox img { max-width: 98vw; max-height: 75vh; }
+    #lightbox .lb-close { top: 10px; right: 10px; }
+
+    /* Menu actions mobile dans la sidebar */
+    .mobile-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .mobile-actions .btn {
+      justify-content: center;
+      padding: 10px;
+      font-size: 13px;
+    }
+  }
+
+  /* Mobile très petit (< 400px) */
+  @media (max-width: 400px) {
+    .photo-grid { grid-template-columns: repeat(auto-fill, 120px); }
+    .photo-card { width: 120px; height: 135px; }
+    .vignette-wrap { width: 120px; height: 90px; }
+  }
+
   scrollbar-width: thin;
   ::-webkit-scrollbar { width: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -506,6 +636,9 @@
 
 <!-- HEADER -->
 <header>
+  <button class="burger-btn" id="burgerBtn" onclick="toggleSidebar()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
   <div class="logo">Photo<span>Desk</span></div>
   <div class="header-stats">{{ total_images }} images indexées</div>
   <div class="header-right">
@@ -517,9 +650,16 @@
 
 <!-- LAYOUT -->
 <div class="layout">
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
   <!-- SIDEBAR -->
-  <aside>
+  <aside id="sidebar">
+    <!-- Actions rapides (visible seulement sur mobile) -->
+    <div class="mobile-actions" id="mobileActions">
+      <button class="btn" onclick="openMkdir(); closeSidebar()">📁 Nouveau dossier</button>
+      <button class="btn" onclick="openUpload(); closeSidebar()">⬆ Importer des images</button>
+      <button class="btn btn-accent" onclick="reindex(); closeSidebar()">↻ Ré-indexer</button>
+    </div>
     <!-- Arborescence -->
     <div class="sidebar-section">
       <div class="sidebar-label">Répertoires</div>
@@ -977,7 +1117,35 @@ function showToast(msg, error = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// ── Upload ──
+// ── Burger / Sidebar mobile ──
+function toggleSidebar() {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  const btn = document.getElementById('burgerBtn');
+  const isOpen = sidebar.classList.contains('open');
+  if (isOpen) {
+    closeSidebar();
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+  document.getElementById('burgerBtn').classList.remove('open');
+}
+
+// Fermer sidebar quand on navigue (clic sur un lien de l'arbre)
+document.querySelectorAll('.dir-tree a, .tag-chip').forEach(a => {
+  a.addEventListener('click', () => {
+    if (window.innerWidth <= 768) closeSidebar();
+  });
+});
+
+
 let uploadFiles = [];
 
 function openUpload() {
