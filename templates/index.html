@@ -107,9 +107,11 @@
   /* ── LAYOUT ── */
   .layout {
     display: flex;
-    flex: 1;
-    height: calc(100vh - 56px);
-    overflow: hidden;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    right: 0;
+    bottom: 0;
   }
 
   /* ── SIDEBAR ── */
@@ -121,6 +123,7 @@
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
+    height: 100%;
   }
 
   .sidebar-section {
@@ -178,9 +181,12 @@
   /* ── MAIN ── */
   main {
     flex: 1;
-    overflow-y: auto;
+    min-width: 0;
+    position: relative;
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
   }
 
   .toolbar {
@@ -191,10 +197,21 @@
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     flex-wrap: wrap;
-    position: sticky;
-    top: 0;
-    z-index: 10;
     background: var(--bg);
+    z-index: 10;
+    width: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .scroll-area {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
   }
 
   .breadcrumb {
@@ -603,6 +620,7 @@
       transform: translateX(-100%);
       transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
       box-shadow: 4px 0 24px rgba(0,0,0,0.5);
+      height: auto;
     }
     aside.open { transform: translateX(0); }
 
@@ -777,6 +795,7 @@
     </div>
 
     <!-- Grid -->
+    <div class="scroll-area" id="scrollArea">
     <div class="grid-container">
       {% if images %}
       <div class="photo-grid" id="photoGrid">
@@ -803,7 +822,8 @@
         <p>Ce répertoire est vide ou aucune image ne correspond aux filtres.</p>
       </div>
       {% endif %}
-    </div>
+    </div><!-- end grid-container -->
+    </div><!-- end scroll-area -->
   </main>
 </div>
 
@@ -1185,9 +1205,21 @@ function showToast(msg, error = false) {
   setTimeout(() => t.classList.remove('show'), 3000);
 }
 
+// ── Positionner scroll-area sous la toolbar ──
+function adjustScrollArea() {
+  const toolbar = document.querySelector('.toolbar');
+  const scrollArea = document.getElementById('scrollArea');
+  if (toolbar && scrollArea) {
+    const h = toolbar.offsetHeight;
+    scrollArea.style.top = h + 'px';
+  }
+}
+adjustScrollArea();
+window.addEventListener('resize', adjustScrollArea);
+
 // ── Scroll to top ──
 const scrollBtn = document.getElementById('scrollTopBtn');
-const mainEl = document.querySelector('main');
+const mainEl = document.getElementById('scrollArea');
 
 function checkScroll() {
   const scrolled = mainEl.scrollTop > 100 || window.scrollY > 100;
