@@ -260,9 +260,23 @@ def api_search_by_tag():
 
 
 if __name__ == "__main__":
-    # Auto-indexer au démarrage
+    import socket
+    hostname = socket.gethostname()
+    try:
+        # Astuce : connexion UDP factice pour trouver l'IP sortante réelle
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        local_ip = s.getsockname()[0]
+        s.close()
+    except Exception:
+        local_ip = socket.gethostbyname(hostname)
+
     print("=== Démarrage du serveur ===")
     print("Indexation initiale...")
     index_all()
-    print("Serveur disponible sur http://localhost:5000")
-    app.run(debug=True, port=5000)
+    print(f"\n✓ Serveur lancé :")
+    print(f"  → Local    : http://localhost:5000")
+    print(f"  → Réseau   : http://{local_ip}:5000")
+    print(f"  → Hostname : http://{hostname}:5000")
+    print("\nCtrl+C pour arrêter\n")
+    app.run(host="0.0.0.0", port=5000, debug=False)
