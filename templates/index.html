@@ -554,9 +554,9 @@
     <div class="sidebar-section">
       <div class="sidebar-label">Filtrer par tag</div>
       <div class="tag-chips">
-        <a href="/?dir={{ current_dir }}&no_tag=1" class="tag-chip {{ 'active' if no_tag else '' }}">sans tag</a>
+        <a href="{{ '/?dir=' + current_dir if no_tag else '/?dir=' + current_dir + '&no_tag=1' }}" class="tag-chip {{ 'active' if no_tag else '' }}">sans tag</a>
         {% for t in all_tags %}
-        <a href="/?dir={{ current_dir }}&tag={{ t }}" class="tag-chip {{ 'active' if tag_filter == t else '' }}">{{ t }}</a>
+        <a href="{{ '/?dir=' + current_dir if tag_filter == t else '/?dir=' + current_dir + '&tag=' + t }}" class="tag-chip {{ 'active' if tag_filter == t else '' }}">{{ t }}</a>
         {% endfor %}
       </div>
     </div>
