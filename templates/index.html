@@ -389,7 +389,7 @@
   /* Toast */
   #toast {
     position: fixed;
-    bottom: 24px;
+    bottom: 72px;
     right: 24px;
     background: var(--success);
     color: #000;
@@ -404,6 +404,33 @@
   }
   #toast.show { transform: translateY(0); opacity: 1; }
   #toast.error { background: var(--danger); color: #fff; }
+
+  /* ── SCROLL TO TOP ── */
+  #scrollTopBtn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    z-index: 98;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.25s, transform 0.25s, border-color 0.15s, color 0.15s;
+    pointer-events: none;
+  }
+  #scrollTopBtn.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  #scrollTopBtn:hover { border-color: var(--accent); color: var(--accent); }
 
   /* Tag input suggestions */
   .tag-input-wrap { position: relative; }
@@ -903,6 +930,9 @@
   </div>
 </div>
 
+<!-- SCROLL TO TOP -->
+<button id="scrollTopBtn" onclick="scrollToTop()" title="Remonter en haut">↑</button>
+
 <!-- TOAST -->
 <div id="toast"></div>
 
@@ -1128,6 +1158,16 @@ function showToast(msg, error = false) {
   t.className = error ? 'error' : '';
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── Scroll to top ──
+const mainEl = document.querySelector('main');
+const scrollBtn = document.getElementById('scrollTopBtn');
+mainEl.addEventListener('scroll', () => {
+  scrollBtn.classList.toggle('visible', mainEl.scrollTop > 300);
+});
+function scrollToTop() {
+  mainEl.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
 // ── Theme toggle ──
